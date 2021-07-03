@@ -5,6 +5,7 @@ const HashRing = require('hashring')
 const crypto = require('crypto')
 const ring  = new HashRing()
 const app = express()
+app.use(express.json())
 
 const {SHARD_1_PORT, SHARD_2_PORT, SHARD_3_PORT, USER, PASSWORD, DATABASE, SRV_HOST, SRV_PORT} = process.env
 
@@ -56,15 +57,17 @@ app.get('/:urlId', async (req, res) => {
     const dbConnection = ring.get(urlId)
     const result = await clients[dbConnection].query('select url from url_table where url_id = $1', [urlId])
     if(result.rowCount < 1) {
-        return res.statusCode(404)
+        return res.sendStatus(404)
     }
     res.send(result.rows[0])
 })
 
 app.post('/', async (req, res) => {
-    const {url} = req.query
-    const hash = crypto.createHash('sha512').update(url).digest('base64')
+    const {url} = req.body
+    console.log(req.body.toString())
+    const hash = crypto.createHash('sha512').update(url).digest('base64url')
     const urlId = hash.substr(0, 15)
+    console.log(urlId)
     const dbConnection = ring.get(urlId)
     await clients[dbConnection].query('insert into url_table (url, url_id) values ($1, $2)', [url, urlId])
     res.send({
