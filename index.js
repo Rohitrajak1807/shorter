@@ -1,3 +1,4 @@
+require('dotenv').config()
 const express = require('express')
 const {Client} = require('pg')
 const HashRing = require('hashring')
@@ -5,24 +6,26 @@ const crypto = require('crypto')
 const ring  = new HashRing()
 const app = express()
 
+const {SHARD_1_PORT, SHARD_2_PORT, SHARD_3_PORT, USER, PASSWORD, DATABASE} = process.env
+
 const clients = {
-    5432: new Client({
+    SHARD_1_PORT: new Client({
         host: 'localhost',
-        port: 5432,
+        port: SHARD_1_PORT,
         user: 'postgres',
         password: 'password',
         database: 'postgres'
     }),
-    5433: new Client({
+    SHARD_2_PORT: new Client({
         host: 'localhost',
-        port: 5433,
+        port: SHARD_2_PORT,
         user: 'postgres',
         password: 'password',
         database: 'postgres'
     }),
-    5434: new Client({
+    SHARD_3_PORT: new Client({
         host: 'localhost',
-        port: 5434,
+        port: SHARD_3_PORT,
         user: 'postgres',
         password: 'password',
         database: 'postgres'
@@ -35,9 +38,18 @@ Object.entries(clients).forEach(client => {
 
 async function connect() {
     Object.entries(clients).forEach(async (client) => {
-        await client[1].connect()
+        try {
+            await client[1].connect()
+        } catch(e) {
+            console.log(e)
+            process.exit(1)
+        }
     })
 }
+
+connect().then(() => {
+    console.log('db connected')
+})
 
 app.get('/:urlId', async (req, res) => {
     const {urlId} = req.params
