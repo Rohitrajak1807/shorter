@@ -64,10 +64,8 @@ app.get('/:urlId', async (req, res) => {
 
 app.post('/', async (req, res) => {
     const {url} = req.body
-    console.log(req.body.toString())
     const hash = crypto.createHash('sha512').update(url).digest('base64url')
     const urlId = hash.substr(0, 15)
-    console.log(urlId)
     const dbConnection = ring.get(urlId)
     await clients[dbConnection].query('insert into url_table (url, url_id) values ($1, $2)', [url, urlId])
     res.send({
