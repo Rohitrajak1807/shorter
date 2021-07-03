@@ -1,8 +1,8 @@
 const express = require('express')
 const {Client} = require('pg')
-const ConsistentHash = require('consistent-hash')
+const HashRing = require('hashring')
 const crypto = require('crypto')
-const ring  = new ConsistentHash()
+const ring  = new HashRing()
 const app = express()
 
 const clients = {
@@ -42,11 +42,11 @@ async function connect() {
 app.get('/:urlId', async (req, res) => {
     const {urlId} = req.params
     const dbConnection = ring.get(urlId)
-    const response = await clients[dbConnection].query('select * from url_table where url_id = $1', [urlId])
-    if(response.rowCount < 1) {
+    const result = await clients[dbConnection].query('select * from url_table where url_id = $1', [urlId])
+    if(result.rowCount < 1) {
         return res.statusCode(404)
     }
-    res.send(response.rows[0])
+    res.send(result.rows[0])
 })
 
 app.post('/', async (req, res) => {
