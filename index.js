@@ -6,7 +6,7 @@ const crypto = require('crypto')
 const ring  = new HashRing()
 const app = express()
 
-const {SHARD_1_PORT, SHARD_2_PORT, SHARD_3_PORT, USER, PASSWORD, DATABASE} = process.env
+const {SHARD_1_PORT, SHARD_2_PORT, SHARD_3_PORT, USER, PASSWORD, DATABASE, SRV_HOST, SRV_PORT} = process.env
 
 const clients = {
     SHARD_1_PORT: new Client({
@@ -54,7 +54,7 @@ connect().then(() => {
 app.get('/:urlId', async (req, res) => {
     const {urlId} = req.params
     const dbConnection = ring.get(urlId)
-    const result = await clients[dbConnection].query('select * from url_table where url_id = $1', [urlId])
+    const result = await clients[dbConnection].query('select url from url_table where url_id = $1', [urlId])
     if(result.rowCount < 1) {
         return res.statusCode(404)
     }
@@ -68,12 +68,10 @@ app.post('/', async (req, res) => {
     const dbConnection = ring.get(urlId)
     await clients[dbConnection].query('insert into url_table (url, url_id) values ($1, $2)', [url, urlId])
     res.send({
-        'hash': hash,
-        'urlId': urlId,
-        'server': dbConnection
+        url: `http://${SRV_HOST}:${SRV_PORT}/${urlId}`
     })
 })
 
-app.listen(8080, () => {
-    console.log('connected to 8080')
+app.listen(SRV_PORT, SRV_HOST, () => {
+    console.log(`listening on ${SRV_PORT} @ ${SRV_HOST}`)
 })
