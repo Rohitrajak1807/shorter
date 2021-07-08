@@ -3,7 +3,7 @@ const express = require('express')
 const {Client} = require('pg')
 const HashRing = require('hashring')
 const crypto = require('crypto')
-const ring  = new HashRing()
+const ring = new HashRing()
 const app = express()
 app.use(express.json())
 
@@ -13,23 +13,23 @@ const clients = {
     SHARD_1_PORT: new Client({
         host: 'localhost',
         port: SHARD_1_PORT,
-        user: 'postgres',
-        password: 'password',
-        database: 'postgres'
+        user: USER,
+        password: PASSWORD,
+        database: DATABASE
     }),
     SHARD_2_PORT: new Client({
         host: 'localhost',
         port: SHARD_2_PORT,
-        user: 'postgres',
-        password: 'password',
-        database: 'postgres'
+        user: USER,
+        password: PASSWORD,
+        database: DATABASE
     }),
     SHARD_3_PORT: new Client({
         host: 'localhost',
         port: SHARD_3_PORT,
-        user: 'postgres',
-        password: 'password',
-        database: 'postgres'
+        user: USER,
+        password: PASSWORD,
+        database: DATABASE
     })
 }
 
@@ -38,14 +38,14 @@ Object.entries(clients).forEach(client => {
 })
 
 async function connect() {
-    Object.entries(clients).forEach(async (client) => {
+    for (const client of Object.entries(clients)) {
         try {
             await client[1].connect()
-        } catch(e) {
+        } catch (e) {
             console.log(e)
             process.exit(1)
         }
-    })
+    }
 }
 
 connect().then(() => {
@@ -56,7 +56,7 @@ app.get('/:urlId', async (req, res) => {
     const {urlId} = req.params
     const dbConnection = ring.get(urlId)
     const result = await clients[dbConnection].query('select url from url_table where url_id = $1', [urlId])
-    if(result.rowCount < 1) {
+    if (result.rowCount < 1) {
         return res.sendStatus(404)
     }
     res.send(result.rows[0])
